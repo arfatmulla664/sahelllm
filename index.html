@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sahel | سهـل</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Noto Sans Arabic Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- PDF.js for rendering documents -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Noto Sans"', '"Noto Kufi Arabic"', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: '#006C35', // Saudi Green
+                        brandHover: '#005a2b',
+                        brandLight: '#e6f0eb'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Directional utilities */
+        .rtl-flip { transform: scaleX(-1); }
+        [dir="rtl"] .rtl-flip { transform: scaleX(1); }
+        
+        /* Markdown Chat Rendering */
+        .prose p { margin-bottom: 0.5rem; }
+        .prose p:last-child { margin-bottom: 0; }
+        .prose ul { list-style-type: disc; margin-inline-start: 1.5rem; margin-bottom: 0.5rem; }
+        .prose ol { list-style-type: decimal; margin-inline-start: 1.5rem; margin-bottom: 0.5rem; }
+        .prose strong { font-weight: 600; color: #111827; }
+        .prose code { background-color: #f1f5f9; padding: 0.125rem 0.25rem; border-radius: 0.25rem; font-family: monospace; font-size: 0.875em; }
+        
+        /* Loading Dots Animation */
+        .dot-flashing {
+            position: relative; width: 6px; height: 6px; border-radius: 3px;
+            background-color: #94a3b8; color: #94a3b8;
+            animation: dot-flashing 1s infinite linear alternate;
+            animation-delay: 0.5s;
+        }
+        .dot-flashing::before, .dot-flashing::after {
+            content: ""; display: inline-block; position: absolute; top: 0;
+            width: 6px; height: 6px; border-radius: 3px;
+            background-color: #94a3b8; color: #94a3b8;
+            animation: dot-flashing 1s infinite alternate;
+        }
+        .dot-flashing::before { inset-inline-start: -10px; animation-delay: 0s; }
+        .dot-flashing::after { inset-inline-start: 10px; animation-delay: 1s; }
+        @keyframes dot-flashing {
+            0% { background-color: #94a3b8; }
+            50%, 100% { background-color: #cbd5e1; }
+        }
+    </style>
+</head>
+<body class="h-screen bg-white text-gray-800 flex flex-col overflow-hidden text-sm sm:text-base">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none w-full max-w-sm px-4"></div>
+
+    <!-- Top Navigation -->
+    <header class="h-16 border-b border-gray-200 flex items-center justify-between px-4 lg:px-6 bg-white z-10 shrink-0 shadow-sm">
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded bg-brand flex items-center justify-center text-white shrink-0">
+                    <svg class="w-5 h-5 rtl-flip" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-brand leading-none tracking-tight" data-i18n="title">Sahel</h1>
+                    <p class="text-[10px] text-gray-500 hidden sm:block mt-0.5" data-i18n="subtitle">government paperwork, made easy</p>
+                </div>
+            </div>
+            <button id="lang-toggle" class="ms-4 text-xs font-medium text-gray-600 hover:text-brand transition-colors border border-gray-300 rounded px-2 py-1 bg-gray-50 hover:bg-white">
+                عربي
+            </button>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <div class="relative hidden sm:block">
+                <input type="password" id="api-key-input" class="w-48 text-sm border border-gray-300 rounded-md py-1.5 px-3 focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand" data-i18n-placeholder="apiKeyPlaceholder" placeholder="Gemini API Key">
+            </div>
+            <button id="connect-btn" class="bg-brand hover:bg-brandHover text-white text-sm font-medium py-1.5 px-4 rounded-md transition-colors shadow-sm flex items-center gap-2">
+                <span data-i18n="connect">Connect</span>
+            </button>
+            <div class="flex items-center gap-1.5 ms-2">
+                <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-red-500 shadow-inner"></div>
+                <span id="status-text" class="text-xs text-gray-600 font-medium hidden sm:inline-block" data-i18n="statusDisconnected">Not Connected</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace (2 Columns) -->
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden bg-gray-50">
+        
+        <!-- COLUMN 1: Tools Sidebar (Documents + Chat Stacked) -->
+        <aside class="w-full md:w-[380px] lg:w-[420px] flex flex-col border-e border-gray-200 bg-white z-0 shrink-0 h-full overflow-hidden shadow-[1px_0_4px_rgba(0,0,0,0.05)]">
+            
+            <!-- Top Section: Document Library -->
+            <div class="flex flex-col shrink-0 h-[40%] min-h-[250px] border-b border-gray-200 bg-white">
+                <div class="p-4 border-b border-gray-100 shrink-0">
+                    <h2 class="text-sm font-semibold text-gray-800 mb-3 flex items-center justify-between">
+                        <span data-i18n="refDocs">Reference Documents</span>
+                        <span id="total-size-display" class="text-[10px] font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded">0.00 MB / 20 MB</span>
+                    </h2>
+                    <div class="flex gap-2">
+                        <select id="doc-source" class="flex-1 text-sm border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand bg-gray-50">
+                            <!-- Populated by JS -->
+                        </select>
+                        <button id="upload-btn" class="flex-none flex items-center justify-center gap-2 bg-white border border-gray-300 hover:border-brand hover:text-brand text-gray-700 text-sm font-medium py-2 px-3 rounded-md transition-colors shadow-sm" title="Upload PDF">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        </button>
+                        <input type="file" id="file-input" class="hidden" accept="application/pdf" multiple>
+                    </div>
+                </div>
+                
+                <!-- Document List (scrollable) -->
+                <div id="doc-list" class="flex-1 overflow-y-auto p-3 space-y-2">
+                    <div id="empty-docs" class="text-xs text-gray-500 text-center p-4 mt-2 bg-gray-50 rounded border border-dashed border-gray-300" data-i18n="noDocs">
+                        No documents uploaded. Upload a PDF to start.
+                    </div>
+                </div>
+                
+                <!-- Privacy notice -->
+                <div class="px-3 py-2 border-t border-gray-100 bg-gray-50 flex items-start gap-1.5 shrink-0">
+                    <svg class="w-3.5 h-3.5 text-brand shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                    <span class="text-[10px] text-gray-500 leading-tight" data-i18n="privacyNotice">Documents are sent directly to Google's Gemini API and not stored on our servers.</span>
+                </div>
+            </div>
+
+            <!-- Bottom Section: Chat Assistant -->
+            <div class="flex-1 flex flex-col min-h-0 bg-gray-50/50">
+                <div class="h-10 border-b border-gray-100 flex items-center px-4 bg-white shrink-0 shadow-sm z-10">
+                    <h2 class="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-brand"></div>
+                        <span data-i18n="chatTitle">Assistant</span>
+                    </h2>
+                    <button id="clear-chat" class="ms-auto text-[10px] font-medium text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1" data-i18n="clear" title="Clear Chat">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        Clear Chat
+                    </button>
+                    <button id="clear-all-btn" class="ms-3 text-[10px] font-medium text-red-500 hover:text-red-700 transition-colors flex items-center gap-1" title="Clear Everything">
+                        <span data-i18n="clearAll">Reset All</span>
+                    </button>
+                </div>
+
+                <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-6 scroll-smooth bg-gray-50/30">
+                    <!-- Initial load shows guided starting prompts dynamically -->
+                    <div id="chat-empty-state" class="text-center py-4 px-2 text-gray-400 flex flex-col items-center justify-center h-full mx-auto">
+                        <div class="bg-brandLight p-3 rounded-full mb-3 shrink-0">
+                            <svg class="w-6 h-6 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                        </div>
+                        <p class="text-xs leading-relaxed mb-4 text-gray-500" data-i18n="emptyChat">Connect your API key and upload documents to start analyzing your paperwork.</p>
+                        
+                        <!-- Starter prompts grid -->
+                        <div class="w-full grid grid-cols-1 gap-2 mt-1">
+                            <button onclick="window.useStarterPrompt(1)" class="p-2 text-start bg-white hover:bg-brandLight hover:border-brand/30 border border-gray-200 rounded-lg transition-all shadow-sm flex flex-col justify-between group">
+                                <span class="text-xs font-semibold text-gray-700 group-hover:text-brand" data-i18n="starter1Title">Register a Business</span>
+                            </button>
+                            <button onclick="window.useStarterPrompt(2)" class="p-2 text-start bg-white hover:bg-brandLight hover:border-brand/30 border border-gray-200 rounded-lg transition-all shadow-sm flex flex-col justify-between group">
+                                <span class="text-xs font-semibold text-gray-700 group-hover:text-brand" data-i18n="starter2Title">Saudization Quotas</span>
+                            </button>
+                            <button onclick="window.useStarterPrompt(4)" class="p-2 text-start bg-white hover:bg-brandLight hover:border-brand/30 border border-gray-200 rounded-lg transition-all shadow-sm flex flex-col justify-between group">
+                                <span class="text-xs font-semibold text-gray-700 group-hover:text-brand" data-i18n="starter4Title">VAT & Zakat Rules</span>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Messages will be injected here -->
+                </div>
+
+                <div class="p-3 border-t border-gray-100 bg-white shrink-0">
+                    <div class="relative flex items-end gap-2 bg-gray-50 border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-brand/20 focus-within:border-brand transition-all p-1">
+                        <textarea id="chat-input" class="w-full bg-transparent border-none focus:ring-0 resize-none text-sm py-2 px-3 disabled:opacity-50 min-h-[40px] max-h-[120px]" rows="1" data-i18n-placeholder="chatInput" placeholder="Ask a question about your documents..." disabled></textarea>
+                        <button id="send-btn" class="p-2 mb-0.5 me-0.5 text-white bg-brand rounded-lg hover:bg-brandHover disabled:opacity-50 disabled:bg-gray-300 transition-colors shrink-0 shadow-sm" disabled>
+                            <svg class="w-4 h-4 rtl-flip" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- COLUMN 2: PDF Viewer -->
+        <section class="flex-1 bg-gray-200/60 flex flex-col relative min-w-0">
+            <!-- Controls -->
+            <div id="pdf-controls" class="h-12 border-b border-gray-200 bg-white flex items-center justify-between px-3 shrink-0 opacity-50 pointer-events-none transition-opacity shadow-sm">
+                <div class="flex items-center gap-1 bg-gray-100 rounded p-1">
+                    <button id="prev-page" class="p-1 rounded hover:bg-white hover:shadow-sm text-gray-600 transition-all">
+                        <svg class="w-4 h-4 rtl-flip" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <span class="text-xs text-gray-700 font-medium px-2 min-w-[80px] text-center">
+                        <span id="page-num">0</span> <span data-i18n="of" class="text-gray-400 font-normal">/</span> <span id="page-count">0</span>
+                    </span>
+                    <button id="next-page" class="p-1 rounded hover:bg-white hover:shadow-sm text-gray-600 transition-all">
+                        <svg class="w-4 h-4 rtl-flip" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+                
+                <div id="pdf-title" class="text-xs font-semibold text-gray-700 truncate max-w-[150px] md:max-w-md text-center px-4"></div>
+                
+                <div class="flex items-center gap-1 bg-gray-100 rounded p-1">
+                    <button id="zoom-out" class="p-1 rounded hover:bg-white hover:shadow-sm text-gray-600 transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"></path></svg>
+                    </button>
+                    <span id="zoom-level" class="text-xs font-medium text-gray-600 w-10 text-center">100%</span>
+                    <button id="zoom-in" class="p-1 rounded hover:bg-white hover:shadow-sm text-gray-600 transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Viewer -->
+            <div id="pdf-container" class="flex-1 overflow-auto p-4 flex justify-center items-start relative bg-gray-100/50">
+                <div id="pdf-empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-gray-400 p-4 text-center">
+                    <div class="bg-white p-6 rounded-full shadow-sm mb-4">
+                        <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    </div>
+                    <p class="text-sm font-medium" data-i18n="selectDocToView">Select a document to view</p>
+                </div>
+                <canvas id="pdf-canvas" class="hidden shadow-md bg-white rounded transition-transform origin-top"></canvas>
+            </div>
+        </section>
+
+        <!-- Feature Modal -->
+        <div id="feature-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm p-4 opacity-0 transition-opacity duration-300">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg flex flex-col max-h-[80vh] overflow-hidden transform scale-95 transition-transform duration-300" id="feature-modal-content">
+                <div class="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-brandLight/30">
+                    <h3 id="feature-modal-title" class="text-base font-bold text-brand flex items-center gap-2">✨ Summary</h3>
+                    <button onclick="closeFeatureModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div id="feature-modal-body" class="p-5 overflow-y-auto flex-1 text-sm text-gray-700 bg-white prose max-w-none">
+                    <!-- Content injected here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        /**
+         * System Requirement: Always set const apiKey = "" (empty string).
+         * The execution environment provides the key at runtime.
+         */
+        const apiKey = "";
+        
+        // Setup PDF.js Worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // State variables
+        let currentLang = 'en';
+        let userApiKey = ""; 
+        let isConfigured = false;
+        let activeModel = "gemini-2.5-flash"; // Fallback router
+        let documents = []; // Array of { id, name, size, base64, sourceIndex }
+        let chatHistory = [];
+        let activeDocId = null;
+        const MAX_MB = 20;
+        const MAX_BYTES = MAX_MB * 1024 * 1024;
+        
+        // PDF Viewer State
+        let pdfDoc = null;
+        let pageNum = 1;
+        let pageRendering = false;
+        let pageNumPending = null;
+        let scale = 1.0;
+        let currentCanvasRenderContext = null;
+
+        // --- Internationalization ---
+        const dictionaries = {
+            en: {
+                title: "Sahel", subtitle: "government paperwork, made easy",
+                connect: "Connect", apiKeyPlaceholder: "Gemini API Key",
+                statusConnected: "Connected", statusDisconnected: "Not Connected",
+                statusConnectedAuto: "Connected (Auto)",
+                refDocs: "Reference Library", uploadPdf: "Upload Document",
+                noDocs: "No documents uploaded. Add a PDF to start.",
+                chatTitle: "Sahel Assistant", chatInput: "Ask about your documents...",
+                send: "Send", clear: "Clear", clearAll: "Reset All",
+                emptyChat: "Connect API key & upload documents. Ask about registration, licenses, VAT, etc.",
+                page: "Page", of: "of", selectDocToView: "Select a document from the library to view",
+                totalSize: "Library Size:", source: "Source",
+                sources: ["Monsha'at", "Ministry of Commerce", "Balady", "Qiwa", "ZATCA", "MISA", "Other"],
+                errSize: "Total document size exceeds 20MB limit.",
+                errApi: "Connection failed. Check API key.",
+                connecting: "Connecting...", success: "Connected successfully!",
+                maxLimit: "Maximum storage (20MB) reached.",
+                uploadSuccess: "Document added to library",
+                apiReqDoc: "Please upload at least one document.",
+                processing: "Analyzing documents...",
+                privacyNotice: "Sent directly to Google API, not stored on our servers.",
+                clearedSuccess: "All session data cleared!",
+                starter1Title: "Register a Business", starter1Desc: "Commerce / MISA",
+                starter2Title: "Saudization Quotas", starter2Desc: "Qiwa rules",
+                starter3Title: "Renew License", starter3Desc: "Balady permits",
+                starter4Title: "VAT & Zakat Rules", starter4Desc: "ZATCA compliance",
+                docNotFound: "Document not found.",
+                summarizeDoc: "✨ Summarize",
+                actionItems: "✨ Action Items",
+                generating: "✨ Generating..."
+            },
+            ar: {
+                title: "سهـل", subtitle: "معاملاتك الحكومية، بكل سهولة",
+                connect: "ربط", apiKeyPlaceholder: "مفتاح Gemini API",
+                statusConnected: "متصل", statusDisconnected: "غير متصل",
+                statusConnectedAuto: "متصل (تلقائي)",
+                refDocs: "المكتبة المرجعية", uploadPdf: "إضافة مستند",
+                noDocs: "المكتبة فارغة. أضف ملف PDF للبدء.",
+                chatTitle: "المساعد الذكي", chatInput: "اسأل عن مستنداتك...",
+                send: "إرسال", clear: "مسح المحادثة", clearAll: "مسح الكل",
+                emptyChat: "اربط مفتاح API وأضف مستنداتك. اسأل عن تأسيس الشركات، الرخص، الزكاة.",
+                page: "صفحة", of: "من", selectDocToView: "اختر مستنداً لعرضه",
+                totalSize: "حجم المكتبة:", source: "الجهة",
+                sources: ["منشآت", "وزارة التجارة", "بلدي", "قوى", "هيئة الزكاة", "وزارة الاستثمار", "أخرى"],
+                errSize: "حجم المستندات يتجاوز الحد (20MB).",
+                errApi: "فشل الاتصال. تأكد من المفتاح.",
+                connecting: "جاري الاتصال...", success: "تم الاتصال بنجاح!",
+                maxLimit: "تم الوصول للحد الأقصى للمساحة (20MB).",
+                uploadSuccess: "تمت إضافة المستند",
+                apiReqDoc: "الرجاء إضافة مستند واحد على الأقل.",
+                processing: "جاري تحليل المستندات...",
+                privacyNotice: "تُرسل مباشرة إلى Google API ولا تُحفظ في خوادمنا.",
+                clearedSuccess: "تم مسح جميع البيانات!",
+                starter1Title: "تأسيس شركة جديدة", starter1Desc: "التجارة / الاستثمار",
+                starter2Title: "نسب التوطين", starter2Desc: "منصة قوى",
+                starter3Title: "تجديد رخصة", starter3Desc: "رخص بلدي",
+                starter4Title: "ضريبة الزكاة", starter4Desc: "هيئة الزكاة",
+                docNotFound: "المستند غير موجود.",
+                summarizeDoc: "✨ تلخيص",
+                actionItems: "✨ نقاط العمل",
+                generating: "✨ جاري المعالجة..."
+            }
+        };
+
+        // --- Utility Functions ---
+        function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+        
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bg = type === 'error' ? 'bg-red-500' : type === 'success' ? 'bg-brand' : 'bg-gray-800';
+            toast.className = `${bg} text-white px-4 py-2 rounded shadow-lg text-sm transition-opacity duration-300 opacity-0 transform translate-y-2 pointer-events-auto flex items-center justify-between gap-3`;
+            toast.innerHTML = `<span>${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            requestAnimationFrame(() => {
+                toast.classList.remove('opacity-0', 'translate-y-2');
+                toast.classList.add('opacity-100', 'translate-y-0');
+            });
+            
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 MB';
+            const k = 1024;
+            const mb = bytes / (k * k);
+            return parseFloat(mb.toFixed(decimals)) + ' MB';
+        }
+
+        // --- Local Storage Session Persistence ---
+        function saveSession() {
+            try {
+                localStorage.setItem('sahel_docs', JSON.stringify(documents));
+                localStorage.setItem('sahel_chat', JSON.stringify(chatHistory));
+                localStorage.setItem('sahel_key', userApiKey);
+                localStorage.setItem('sahel_configured', isConfigured);
+                localStorage.setItem('sahel_lang', currentLang);
+                localStorage.setItem('sahel_active_model', activeModel);
+            } catch (err) { console.error("Storage save failed:", err); }
+        }
+
+        function loadSession() {
+            try {
+                const savedLang = localStorage.getItem('sahel_lang');
+                if (savedLang) currentLang = savedLang;
+                
+                const savedDocs = localStorage.getItem('sahel_docs');
+                if (savedDocs) documents = JSON.parse(savedDocs);
+                
+                const savedChat = localStorage.getItem('sahel_chat');
+                if (savedChat) chatHistory = JSON.parse(savedChat);
+                
+                const savedModel = localStorage.getItem('sahel_active_model');
+                if (savedModel) activeModel = savedModel;
+                
+                const savedKey = localStorage.getItem('sahel_key');
+                if (savedKey) {
+                    userApiKey = savedKey;
+                    document.getElementById('api-key-input').value = userApiKey;
+                }
+                
+                const savedConfigured = localStorage.getItem('sahel_configured');
+                if (savedConfigured) isConfigured = (savedConfigured === 'true');
+            } catch (err) { console.error("Storage loading failed:", err); }
+        }
+
+        function clearAllData() {
+            localStorage.clear();
+            documents = [];
+            chatHistory = [];
+            userApiKey = "";
+            isConfigured = false;
+            activeDocId = null;
+            activeModel = "gemini-2.5-flash";
+            document.getElementById('api-key-input').value = "";
+            
+            // Check again if environment key exists
+            checkEnvironmentKey();
+            
+            hidePDF();
+            renderDocumentList();
+            renderChat();
+            updateUIState();
+            showToast(t('clearedSuccess'), 'success');
+        }
+
+        // --- Injected Key Check (Critical Sandbox Fix) ---
+        function checkEnvironmentKey() {
+            if (apiKey && apiKey.trim() !== "") {
+                isConfigured = true;
+                if (!userApiKey) {
+                    userApiKey = apiKey;
+                    document.getElementById('api-key-input').value = "••••••••••••••••••••••••";
+                }
+            }
+        }
+
+        // --- Initialization and UI Logic ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSession();
+            checkEnvironmentKey(); // Automatic platform key injection hook
+            initLanguage();
+            populateSources();
+            attachEventListeners();
+            updateUIState();
+            
+            if (documents.length > 0) {
+                selectDocument(documents[0].id);
+            }
+        });
+
+        function attachEventListeners() {
+            document.getElementById('lang-toggle').addEventListener('click', toggleLanguage);
+            document.getElementById('connect-btn').addEventListener('click', handleConnect);
+            document.getElementById('upload-btn').addEventListener('click', () => document.getElementById('file-input').click());
+            document.getElementById('file-input').addEventListener('change', handleFileUpload);
+            document.getElementById('clear-all-btn').addEventListener('click', clearAllData);
+            
+            document.getElementById('prev-page').addEventListener('click', onPrevPage);
+            document.getElementById('next-page').addEventListener('click', onNextPage);
+            document.getElementById('zoom-in').addEventListener('click', () => setZoom(scale + 0.2));
+            document.getElementById('zoom-out').addEventListener('click', () => setZoom(scale - 0.2));
+            
+            document.getElementById('send-btn').addEventListener('click', handleSendChat);
+            document.getElementById('chat-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendChat(); }
+            });
+            document.getElementById('clear-chat').addEventListener('click', () => {
+                chatHistory = [];
+                renderChat();
+                saveSession();
+            });
+            
+            const tx = document.getElementById('chat-input');
+            tx.addEventListener("input", function() {
+                this.style.height = "auto";
+                this.style.height = (this.scrollHeight) + "px";
+            });
+        }
+
+        // --- Translation Logic ---
+        function initLanguage() {
+            document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+            document.documentElement.lang = currentLang;
+            
+            const dict = dictionaries[currentLang];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[key]) el.textContent = dict[key];
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (dict[key]) el.placeholder = dict[key];
+            });
+            
+            document.getElementById('lang-toggle').textContent = currentLang === 'en' ? 'عربي' : 'English';
+            populateSources();
+            renderDocumentList();
+            renderChat();
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'ar' : 'en';
+            initLanguage();
+            saveSession();
+        }
+
+        function populateSources() {
+            const select = document.getElementById('doc-source');
+            const sources = dictionaries[currentLang].sources;
+            const currentValIndex = select.selectedIndex > -1 ? select.selectedIndex : 0;
+            
+            select.innerHTML = '';
+            sources.forEach((source, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = source;
+                select.appendChild(option);
+            });
+            select.selectedIndex = currentValIndex;
+        }
+
+        function t(key) { return dictionaries[currentLang][key] || key; }
+
+        // --- Guided Starting Prompts ---
+        window.useStarterPrompt = function(index) {
+            if (!isConfigured) {
+                showToast(currentLang === 'en' ? "Please connect your API key first." : "الرجاء ربط مفتاح API أولاً.", "error");
+                return;
+            }
+            if (documents.length === 0) {
+                showToast(currentLang === 'en' ? "Please upload a document to analyze first." : "الرجاء إضافة مستند للبدء بالتحليل أولاً.", "error");
+                return;
+            }
+
+            const inputEl = document.getElementById('chat-input');
+            const prompts = {
+                en: [
+                    "How do I register a new business under the Ministry of Commerce and MISA?",
+                    "What are the Saudization quota requirements on Qiwa platform and how do I satisfy them?",
+                    "How do I renew my commercial municipal permit through the Balady platform?",
+                    "What are the ZATCA VAT and Zakat filing requirements for Saudi small businesses?"
+                ],
+                ar: [
+                    "كيف يمكنني تأسيس شركة جديدة تحت مظلة وزارة التجارة ووزارة الاستثمار؟",
+                    "ما هي نسب التوطين (السعودة) المطلوبة في منصة قوى وكيفية الالتزام بها؟",
+                    "كيف يمكنني تجديد رخصتي التجارية البلدية من خلال منصة بلدي؟",
+                    "ما هي متطلبات الزكاة وضريبة القيمة المضافة من هيئة الزكاة والضريبة للمنشآت الصغيرة؟"
+                ]
+            };
+            
+            const selectedPrompt = prompts[currentLang][index - 1];
+            inputEl.value = selectedPrompt;
+            inputEl.disabled = false;
+            inputEl.style.height = "auto";
+            inputEl.style.height = (inputEl.scrollHeight) + "px";
+            inputEl.focus();
+            
+            showToast(currentLang === 'en' ? "Starter prompt loaded! Send it when ready." : "تم تحميل الاقتراح! اضغط إرسال متى أردت.", "info");
+        }
+
+        window.jumpToCitation = async function(docName, targetPage) {
+            const matchedDoc = documents.find(d => d.name.toLowerCase().includes(docName.toLowerCase()));
+            if (matchedDoc) {
+                await selectDocument(matchedDoc.id, targetPage);
+                showToast(currentLang === 'en' ? `Jumping to page ${targetPage} of ${matchedDoc.name}` : `الانتقال إلى صفحة ${targetPage} من مستند ${matchedDoc.name}`, "success");
+            } else {
+                showToast(t('docNotFound'), "error");
+            }
+        };
+
+        // --- API & Connection Logic with Auto-Fallback ---
+        async function handleConnect() {
+            const inputKey = document.getElementById('api-key-input').value.trim();
+            const btn = document.getElementById('connect-btn');
+            
+            if (btn.disabled) return;
+            
+            btn.disabled = true;
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = `<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> <span class="ms-2">${t('connecting')}</span>`;
+            
+            userApiKey = inputKey;
+            const keyToUse = userApiKey || apiKey;
+            
+            if (!keyToUse) {
+                showToast(t('errApi'), 'error');
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+                return;
+            }
+
+            // DYNAMIC ROUTING: We try standard first, then fallback to preview model
+            const candidateModels = ["gemini-2.5-flash", "gemini-2.5-flash-preview-09-2025"];
+            let connectedSuccessfully = false;
+
+            for (let model of candidateModels) {
+                try {
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyToUse}`;
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: "ping" }] }] })
+                    });
+
+                    const data = await res.json().catch(() => ({}));
+
+                    if (res.ok) {
+                        isConfigured = true;
+                        activeModel = model; // Save the successful model structure
+                        connectedSuccessfully = true;
+                        showToast(t('success'), 'success');
+                        saveSession();
+                        break;
+                    }
+                } catch (err) {
+                    console.warn(`Pinging model ${model} failed, testing fallback if available.`);
+                }
+            }
+
+            if (!connectedSuccessfully) {
+                isConfigured = false;
+                showToast(t('errApi'), 'error');
+            }
+            
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            updateUIState();
+        }
+
+        function updateUIState() {
+            const statusDot = document.getElementById('status-dot');
+            const statusText = document.getElementById('status-text');
+            const chatInput = document.getElementById('chat-input');
+            const sendBtn = document.getElementById('send-btn');
+            const apiKeyInput = document.getElementById('api-key-input');
+            
+            if (isConfigured) {
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-green-500 shadow-inner";
+                statusText.textContent = (userApiKey === apiKey && apiKey !== "") ? t('statusConnectedAuto') : t('statusConnected');
+                statusText.classList.remove('text-gray-600');
+                statusText.classList.add('text-green-700');
+                apiKeyInput.classList.add('bg-gray-100', 'text-gray-500');
+            } else {
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-red-500 shadow-inner";
+                statusText.textContent = t('statusDisconnected');
+                statusText.classList.add('text-gray-600');
+                statusText.classList.remove('text-green-700');
+                apiKeyInput.classList.remove('bg-gray-100', 'text-gray-500');
+            }
+            
+            const canChat = isConfigured && documents.length > 0;
+            chatInput.disabled = !canChat;
+            sendBtn.disabled = !canChat;
+        }
+
+        // --- Document Handling Logic ---
+        async function handleFileUpload(e) {
+            const files = e.target.files;
+            if (!files.length) return;
+            
+            const sourceSelect = document.getElementById('doc-source');
+            const sourceIndex = sourceSelect.value;
+            
+            let totalCurrentSize = documents.reduce((sum, d) => sum + d.size, 0);
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (file.type !== "application/pdf") continue;
+                
+                if (totalCurrentSize + file.size > MAX_BYTES) {
+                    showToast(t('maxLimit'), 'error');
+                    break;
+                }
+                
+                try {
+                    const base64Data = await readFileAsBase64(file);
+                    const docId = 'doc_' + Date.now() + '_' + i;
+                    
+                    documents.push({
+                        id: docId,
+                        name: file.name,
+                        size: file.size,
+                        base64: base64Data,
+                        sourceIndex: sourceIndex,
+                    });
+                    totalCurrentSize += file.size;
+                    
+                } catch (err) {
+                    console.error("Error reading file", err);
+                }
+            }
+            
+            e.target.value = ''; // Reset input
+            renderDocumentList();
+            updateUIState();
+            saveSession();
+            
+            if (documents.length > 0 && !activeDocId) {
+                selectDocument(documents[0].id);
+            }
+            
+            if (documents.length > 0) showToast(t('uploadSuccess'), 'success');
+        }
+
+        function readFileAsBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const dataUrl = reader.result;
+                    const base64 = dataUrl.split(',')[1];
+                    resolve(base64);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function renderDocumentList() {
+            const listContainer = document.getElementById('doc-list');
+            const emptyState = document.getElementById('empty-docs');
+            const sizeDisplay = document.getElementById('total-size-display');
+            
+            const totalSize = documents.reduce((sum, d) => sum + d.size, 0);
+            sizeDisplay.textContent = `${formatBytes(totalSize)} / 20 MB`;
+            
+            if (documents.length === 0) {
+                listContainer.innerHTML = '';
+                listContainer.appendChild(emptyState);
+                emptyState.style.display = 'block';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            listContainer.innerHTML = '';
+            
+            const sourcesList = dictionaries[currentLang].sources;
+
+            documents.forEach(doc => {
+                const isSelected = doc.id === activeDocId;
+                const sourceName = sourcesList[doc.sourceIndex] || sourcesList[0];
+                
+                const item = document.createElement('div');
+                item.className = `p-2 rounded-lg border cursor-pointer transition-colors group flex items-start gap-3 ${isSelected ? 'bg-brandLight border-brand/30' : 'bg-white border-gray-100 hover:border-brand/30 hover:shadow-sm'}`;
+                item.onclick = () => selectDocument(doc.id);
+                
+                item.innerHTML = `
+                    <div class="mt-1 ${isSelected ? 'text-brand' : 'text-gray-400 group-hover:text-brand'}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-800 truncate ${isSelected ? 'text-brand' : ''}">${doc.name}</p>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600">${sourceName}</span>
+                            <span class="text-[10px] text-gray-400">${formatBytes(doc.size, 1)}</span>
+                        </div>
+                        <div class="flex gap-1.5 mt-2">
+                            <button onclick="event.stopPropagation(); runDocumentFeature('${doc.id}', 'summarize')" class="text-[10px] px-2 py-1 bg-brand/5 text-brand border border-brand/20 rounded hover:bg-brand hover:text-white transition-colors flex-1 text-center font-medium">${t('summarizeDoc')}</button>
+                            <button onclick="event.stopPropagation(); runDocumentFeature('${doc.id}', 'actions')" class="text-[10px] px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded hover:bg-amber-500 hover:text-white transition-colors flex-1 text-center font-medium">${t('actionItems')}</button>
+                        </div>
+                    </div>
+                    <button class="text-gray-400 hover:text-red-500 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity" onclick="event.stopPropagation(); deleteDocument('${doc.id}')">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                `;
+                listContainer.appendChild(item);
+            });
+        }
+
+        function deleteDocument(id) {
+            documents = documents.filter(d => d.id !== id);
+            if (activeDocId === id) {
+                activeDocId = null;
+                hidePDF();
+                if (documents.length > 0) selectDocument(documents[0].id);
+            }
+            renderDocumentList();
+            updateUIState();
+            saveSession();
+        }
+
+        // --- PDF Rendering Logic ---
+        async function selectDocument(id, targetPage = 1) {
+            activeDocId = id;
+            renderDocumentList();
+            
+            const doc = documents.find(d => d.id === id);
+            if (!doc) return;
+            
+            document.getElementById('pdf-empty-state').style.display = 'none';
+            document.getElementById('pdf-canvas').style.display = 'block';
+            document.getElementById('pdf-controls').classList.remove('opacity-50', 'pointer-events-none');
+            document.getElementById('pdf-title').textContent = doc.name;
+            
+            try {
+                const binaryString = window.atob(doc.base64);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                
+                pdfDoc = await pdfjsLib.getDocument({data: bytes}).promise;
+                document.getElementById('page-count').textContent = pdfDoc.numPages;
+                
+                pageNum = Math.max(1, Math.min(targetPage, pdfDoc.numPages));
+                scale = 1.0;
+                updateZoomUI();
+                renderPage(pageNum);
+            } catch (err) {
+                console.error("Error rendering PDF", err);
+                showToast("Failed to render document", "error");
+            }
+        }
+
+        function hidePDF() {
+            document.getElementById('pdf-empty-state').style.display = 'flex';
+            document.getElementById('pdf-canvas').style.display = 'none';
+            document.getElementById('pdf-controls').classList.add('opacity-50', 'pointer-events-none');
+            document.getElementById('pdf-title').textContent = '';
+            pdfDoc = null;
+        }
+
+        async function renderPage(num) {
+            pageRendering = true;
+            try {
+                const page = await pdfDoc.getPage(num);
+                const canvas = document.getElementById('pdf-canvas');
+                const ctx = canvas.getContext('2d');
+                
+                const container = document.getElementById('pdf-container');
+                const viewportRaw = page.getViewport({ scale: 1.0 });
+                const baseScale = Math.min((container.clientWidth - 40) / viewportRaw.width, 1.5);
+                const finalScale = baseScale * scale;
+                
+                const viewport = page.getViewport({ scale: finalScale });
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                const renderContext = { canvasContext: ctx, viewport: viewport };
+                
+                if (currentCanvasRenderContext && currentCanvasRenderContext.cancel) {
+                    currentCanvasRenderContext.cancel();
+                }
+                
+                currentCanvasRenderContext = page.render(renderContext);
+                await currentCanvasRenderContext.promise;
+                
+                pageRendering = false;
+                if (pageNumPending !== null) {
+                    renderPage(pageNumPending);
+                    pageNumPending = null;
+                }
+                
+                document.getElementById('page-num').textContent = num;
+                document.getElementById('prev-page').disabled = num <= 1;
+                document.getElementById('next-page').disabled = num >= pdfDoc.numPages;
+                
+            } catch (e) {
+                if (e.name !== "RenderingCancelledException") {
+                   console.error("PDF Render error", e);
+                }
+                pageRendering = false;
+            }
+        }
+
+        function queueRenderPage(num) {
+            if (pageRendering) {
+                pageNumPending = num;
+            } else {
+                renderPage(num);
+            }
+        }
+
+        function onPrevPage() {
+            if (pageNum <= 1) return;
+            pageNum--;
+            queueRenderPage(pageNum);
+        }
+
+        function onNextPage() {
+            if (pageNum >= pdfDoc.numPages) return;
+            pageNum++;
+            queueRenderPage(pageNum);
+        }
+        
+        // FIXED: Resolved critical javascript syntax error in setZoom parenthesis check
+        function setZoom(newScale) {
+            if (newScale < 0.5 || newScale > 3.0) return;
+            scale = newScale;
+            updateZoomUI();
+            queueRenderPage(pageNum);
+        }
+        
+        function updateZoomUI() {
+            document.getElementById('zoom-level').textContent = Math.round(scale * 100) + '%';
+        }
+
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                if (pdfDoc) queueRenderPage(pageNum);
+            }, 200);
+        });
+
+        // --- Chat & API Logic ---
+        async function fetchWithRetry(url, options, retries = 5) {
+            const delays = [1000, 2000, 4000, 8000, 16000];
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const res = await fetch(url, options);
+                    if (!res.ok) {
+                        const errorData = await res.json().catch(() => ({}));
+                        const errMsg = errorData?.error?.message || '';
+                        
+                        // Instantly fail without retrying if it's an Auth or Key error (400, 401, 403)
+                        if (res.status === 400 || res.status === 401 || res.status === 403) {
+                             throw new Error(`Auth Error: ${errMsg}`);
+                        }
+                        throw new Error(`HTTP error! status: ${res.status} - ${errMsg}`);
+                    }
+                    return await res.json();
+                } catch (err) {
+                    if (i === retries - 1 || err.message.includes("Auth Error")) throw err;
+                    await sleep(delays[i]);
+                }
+            }
+        }
+
+        function parseMarkdown(text) {
+            let processedText = text.replace(/\[Source:\s*([^,\]]+?),\s*(?:p\.|page\s*)(\d+)\]/gi, (match, docName, pageStr) => {
+                const escapedDoc = docName.replace(/'/g, "\\'").replace(/"/g, '&quot;').trim();
+                const pageNumVal = parseInt(pageStr, 10);
+                return `<button onclick="window.jumpToCitation('${escapedDoc}', ${pageNumVal})" class="inline-flex items-center gap-1 mx-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-brandLight text-brand border border-brand/20 hover:bg-brand hover:text-white transition-all cursor-pointer" title="Jump to ${escapedDoc} page ${pageNumVal}">📖 ${docName}, p.${pageNumVal}</button>`;
+            });
+
+            let html = processedText
+                .replace(/^### (.*$)/gim, '<h3 class="text-base font-bold mt-2 mb-1 text-gray-800">$1</h3>')
+                .replace(/^## (.*$)/gim, '<h2 class="text-lg font-bold mt-3 mb-2 text-gray-800">$1</h2>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/```([\s\S]*?)```/g, '<pre class="bg-gray-100 p-2 rounded my-2 overflow-x-auto text-xs font-mono border border-gray-200"><code>$1</code></pre>')
+                .replace(/`(.*?)`/g, '<code>$1</code>')
+                .replace(/^\s*- (.*$)/gim, '<li>$1</li>')
+                .replace(/^\s*\d+\. (.*$)/gim, '<li>$1</li>');
+                
+            html = html.replace(/(<li>.*<\/li>)/s, '<ul class="my-2 list-disc ps-5 space-y-1">$1</ul>');
+            
+            html = html.split('\n').map(line => {
+                if (line.trim() === '' || line.startsWith('<h') || line.startsWith('<u') || line.startsWith('<l') || line.startsWith('<p') || line.startsWith('<pre')) return line;
+                return `<p>${line}</p>`;
+            }).join('');
+
+            return `<div class="prose max-w-none text-xs sm:text-sm leading-relaxed">${html}</div>`;
+        }
+
+        function renderChat() {
+            const container = document.getElementById('chat-messages');
+            const emptyState = document.getElementById('chat-empty-state');
+            
+            if (chatHistory.length === 0) {
+                container.innerHTML = '';
+                container.appendChild(emptyState);
+                emptyState.style.display = 'flex';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            container.innerHTML = '';
+            
+            chatHistory.forEach(msg => {
+                const wrapper = document.createElement('div');
+                const isUser = msg.role === 'user';
+                wrapper.className = `flex w-full ${isUser ? 'justify-end' : 'justify-start'} mb-4`;
+                
+                const bubble = document.createElement('div');
+                bubble.className = `max-w-[90%] rounded-2xl px-4 py-3 shadow-sm ${
+                    isUser 
+                        ? 'bg-brand text-white rounded-tr-sm rtl:rounded-tr-2xl rtl:rounded-tl-sm' 
+                        : 'bg-white border border-gray-100 text-gray-800 rounded-tl-sm rtl:rounded-tl-2xl rtl:rounded-tr-sm'
+                }`;
+                
+                bubble.innerHTML = isUser ? `<p class="whitespace-pre-wrap text-sm">${msg.text}</p>` : parseMarkdown(msg.text);
+                wrapper.appendChild(bubble);
+                container.appendChild(wrapper);
+            });
+            
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function addLoadingBubble() {
+            const container = document.getElementById('chat-messages');
+            const wrapper = document.createElement('div');
+            wrapper.id = 'loading-bubble';
+            wrapper.className = `flex w-full justify-start mb-4`;
+            wrapper.innerHTML = `
+                <div class="max-w-[85%] rounded-2xl px-5 py-4 shadow-sm bg-white border border-gray-100 rounded-tl-sm rtl:rounded-tl-2xl rtl:rounded-tr-sm flex items-center gap-2">
+                    <div class="dot-flashing"></div>
+                </div>
